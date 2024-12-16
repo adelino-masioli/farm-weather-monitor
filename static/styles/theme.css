@@ -1,0 +1,487 @@
+/* Layout */
+body {
+    font-family: var(--font-family-base);
+    color: var(--isla-primary-dark);
+    background-color: var(--isla-background);
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    background-color: white;
+    border-right: 1px solid rgba(0, 130, 106, 0.1);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(0, 130, 106, 0.1);
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-text {
+    font-size: 1.25rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--isla-primary);
+}
+
+.sidebar-content {
+    padding: 1.5rem 1rem;
+    overflow-y: auto;
+}
+
+.sidebar-section {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--isla-neutral);
+    margin: 1.5rem 0 0.75rem;
+    font-weight: var(--font-weight-medium);
+}
+
+.sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--isla-neutral);
+    border-radius: 8px;
+    margin-bottom: 0.25rem;
+    font-weight: var(--font-weight-medium);
+    transition: all 0.2s ease;
+}
+
+.sidebar .nav-link:hover {
+    color: var(--isla-primary);
+    background-color: rgba(0, 130, 106, 0.05);
+}
+
+.sidebar .nav-link.active {
+    color: var(--isla-primary);
+    background-color: rgba(0, 130, 106, 0.1);
+    font-weight: var(--font-weight-medium);
+}
+
+.sidebar .nav-link i {
+    width: 20px;
+    text-align: center;
+    margin-right: 0.75rem;
+}
+
+/* Main Content */
+.main-content {
+    margin-left: 280px;
+    padding: 2rem;
+    background-color: var(--isla-background);
+    min-height: 100vh;
+}
+
+/* Cards */
+.card {
+    background-color: var(--isla-surface);
+    border: 1px solid var(--isla-border);
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 130, 106, 0.1);
+    padding: 1rem 1.25rem;
+    font-weight: var(--font-weight-normal);
+}
+
+.card-title {
+    color: var(--isla-primary);
+    font-size: 1rem;
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: 1rem;
+}
+
+/* Weather Components */
+.weather-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.weather-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 130, 106, 0.1);
+}
+
+.metric-card {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: var(--isla-background);
+}
+
+.metric-card i {
+    font-size: 1.25rem;
+    color: var(--isla-primary);
+    margin-bottom: 0.5rem;
+}
+
+.metric-card h5 {
+    font-size: 0.875rem;
+    color: var(--isla-neutral);
+    margin-bottom: 0.5rem;
+    font-weight: var(--font-weight-normal);
+}
+
+.metric-card h3 {
+    font-size: 1.25rem;
+    color: var(--isla-primary-dark);
+    margin-bottom: 0;
+    font-weight: var(--font-weight-semibold);
+}
+
+.weather-icon {
+    font-size: 1.25rem;
+    color: var(--isla-primary);
+    margin-bottom: 1rem;
+}
+
+/* Buttons and Actions */
+.btn-primary {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: var(--font-weight-medium);
+}
+
+/* Status Indicators */
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-active {
+    background-color: var(--isla-accent);
+    box-shadow: 0 0 0 2px rgba(167, 255, 162, 0.2);
+}
+
+.status-inactive {
+    background-color: var(--isla-neutral);
+}
+
+/* Update Info */
+.update-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.update-info .status-indicator {
+    margin-right: 0.25rem;
+}
+
+/* Global Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-family-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--isla-primary-dark);
+    font-size: 1.25rem;
+}
+
+.navbar-brand {
+    font-weight: var(--font-weight-semibold);
+}
+
+/* Weather cards customization */
+.recommendation-item {
+    border-left: 4px solid var(--isla-primary);
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: rgba(167, 255, 162, 0.1);
+}
+
+/* Location info */
+.location-info {
+    color: var(--isla-neutral);
+    font-size: 0.875rem;
+}
+
+.location-info i {
+    color: var(--isla-primary);
+    margin-right: 0.5rem;
+}
+
+/* Map customization */
+#map {
+    height: 310px;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 130, 106, 0.1);
+}
+
+/* Custom gradients */
+.bg-gradient-primary {
+    background: linear-gradient(45deg, var(--isla-primary-dark), var(--isla-primary));
+}
+
+/* Progress bars */
+.progress-bar {
+    background-color: var(--isla-primary);
+}
+
+/* List groups */
+.list-group-item.active {
+    background-color: var(--isla-primary);
+    border-color: var(--isla-primary);
+}
+
+/* Value indicators */
+.value-up {
+    color: var(--isla-accent);
+}
+
+.value-down {
+    color: var(--isla-neutral);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+/* The track is the background of the scrollbar, where the thumb moves. */
+::-webkit-scrollbar-track {
+    background: var(--isla-background);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--isla-neutral);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background:  var(--isla-primary-dark);
+}
+
+/* Firefox Scrollbar */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--isla-neutral) var(--isla-background);
+}
+
+/* Recommendations */
+#recommendations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.recommendation-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: var(--isla-background);
+}
+
+.recommendation-item i {
+    color: var(--isla-primary);
+    font-size: 1rem;
+    margin-top: 0.125rem;
+}
+
+.recommendation-item span {
+    color: var(--isla-primary-dark);
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+/* Sun Progress */
+.sun-progress .progress {
+    background-color: var(--isla-background);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.sun-progress .progress-bar {
+    transition: width 0.5s ease;
+    background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%);
+}
+
+.sun-progress small {
+    font-size: 0.75rem;
+    color: var(--isla-neutral);
+}
+
+/* Sun Details */
+.sun-details {
+    border-top: 1px solid var(--isla-border);
+    padding-top: 0.75rem;
+}
+
+.sun-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.sun-detail-item:last-child {
+    margin-bottom: 0;
+}
+
+.sun-detail-item .label {
+    color: var(--isla-neutral);
+}
+
+.sun-detail-item .value {
+    color: var(--isla-primary-dark);
+    font-weight: var(--font-weight-medium);
+}
+
+/* Wind Details */
+.wind-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.wind-speed {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.wind-direction-icon {
+    font-size: 2rem;
+    color: var(--isla-primary);
+    transition: transform 0.3s ease;
+}
+
+.wind-values h3 {
+    margin: 0;
+    color: var(--isla-primary-dark);
+    font-size: 1.5rem;
+}
+
+.wind-compass {
+    width: 100px;
+    height: 100px;
+    position: relative;
+}
+
+.compass-circle {
+    width: 100%;
+    height: 100%;
+    border: 2px solid var(--isla-border);
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.compass-point {
+    position: absolute;
+    font-size: 0.8rem;
+    font-weight: var(--font-weight-medium);
+    color: var(--isla-neutral);
+}
+
+.compass-point.n { top: 5px; left: 50%; transform: translateX(-50%); }
+.compass-point.e { right: 5px; top: 50%; transform: translateY(-50%); }
+.compass-point.s { bottom: 5px; left: 50%; transform: translateX(-50%); }
+.compass-point.w { left: 5px; top: 50%; transform: translateY(-50%); }
+
+.compass-arrow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1.5px;
+    height: 30%;
+    background-color: var(--isla-primary);
+    transform-origin: 50% 100%;
+    margin-top: -30%;
+}
+
+.compass-arrow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+    border-bottom: 4px solid var(--isla-primary);
+}
+
+.wind-details {
+    border-top: 1px solid var(--isla-border);
+    padding-top: 1rem;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.detail-row:last-child {
+    margin-bottom: 0;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.detail-item .label {
+    font-size: 0.75rem;
+    color: var(--isla-neutral);
+    margin-bottom: 0.25rem;
+}
+
+.detail-item .value {
+    font-size: 0.875rem;
+    color: var(--isla-primary-dark);
+    font-weight: var(--font-weight-medium);
+}
+
+.wind-advisory {
+    background-color: var(--isla-background);
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--isla-neutral);
+}
+
+.wind-advisory.warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #856404;
+}
+
+.wind-advisory.danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #721c24;
+}

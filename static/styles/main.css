@@ -1,0 +1,12 @@
+/* Custom Utility Classes */
+.text-primary {
+  color: var(--isla-primary) !important;
+}
+
+.bg-surface {
+  background-color: var(--isla-surface-lighter);
+}
+
+.border-primary {
+  border-color: var(--isla-primary) !important;
+}
