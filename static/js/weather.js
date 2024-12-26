@@ -7,10 +7,10 @@ function initMap(lat, lon) {
         attribution: 'OpenStreetMap contributors'
     }).addTo(map);
 
-    // Add marker for farm location
+    // Add marker for location
     L.marker([lat, lon])
         .addTo(map)
-        .bindPopup('Farm Location - Alentejo Region')
+        .bindPopup('Porto Municipality')
         .openPopup();
 
     return map;
@@ -18,12 +18,8 @@ function initMap(lat, lon) {
 
 function getWindDirection(degrees) {
     const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-    const index = Math.round(((degrees %= 360) < 0 ? degrees + 360 : degrees) / 22.5) % 16;
-    return `${degrees}° ${directions[index]}`;
-}
-
-function formatTime(timestamp) {
-    return new Date(timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const index = Math.round(((degrees % 360) / 22.5));
+    return directions[index % 16];
 }
 
 function getBeaufortScale(windSpeed) {
@@ -43,7 +39,87 @@ function getBeaufortScale(windSpeed) {
         { scale: 12, description: 'Hurricane', maxSpeed: Infinity }
     ];
     
-    return beaufortScale.find(b => windSpeed <= b.maxSpeed);
+    const result = beaufortScale.find(b => windSpeed <= b.maxSpeed);
+    return { scale: result.scale, description: result.description };
+}
+
+function getWindConditions(windSpeed) {
+    // Wind speed in km/h
+    if (windSpeed < 6) return "Very light";
+    if (windSpeed < 12) return "Light";
+    if (windSpeed < 20) return "Gentle";
+    if (windSpeed < 29) return "Moderate";
+    if (windSpeed < 39) return "Fresh";
+    if (windSpeed < 50) return "Strong";
+    if (windSpeed < 62) return "Near Gale";
+    if (windSpeed >= 62) return "Gale or stronger";
+    return "Unknown";
+}
+
+function updateWindDisplay(data) {
+    const windSpeed = data.wind.speed * 3.6; // Convert m/s to km/h
+    const windDeg = data.wind.deg;
+    const windGust = data.wind.gust ? data.wind.gust * 3.6 : windSpeed + 5;
+    const direction = getWindDirection(windDeg);
+    const beaufort = getBeaufortScale(windSpeed);
+    const conditions = getWindConditions(windSpeed);
+
+    // Update wind speed and direction
+    const windSpeedElement = document.getElementById('wind-speed');
+    if (windSpeedElement) {
+        windSpeedElement.textContent = `${windSpeed.toFixed(1)} km/h`;
+    }
+
+    const windDirectionElement = document.getElementById('wind-direction');
+    if (windDirectionElement) {
+        windDirectionElement.textContent = `${direction} (${windDeg}°)`;
+    }
+
+    // Update compass arrow
+    const compassArrow = document.getElementById('compass-arrow');
+    if (compassArrow) {
+        compassArrow.style.transform = `rotate(${windDeg}deg)`;
+    }
+
+    // Update direction icon
+    const directionIcon = document.getElementById('wind-direction-icon');
+    if (directionIcon) {
+        directionIcon.style.transform = `rotate(${windDeg}deg)`;
+    }
+
+    // Update wind details
+    const elements = {
+        'wind-gusts': `${windGust.toFixed(1)} km/h`,
+        'beaufort-scale': `${beaufort.scale} - ${beaufort.description}`,
+        'wind-conditions': conditions,
+        'wind-chill': `${Math.round(data.main.feels_like)}°C`
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    });
+
+    // Update wind advisory
+    const advisoryElement = document.getElementById('wind-advisory');
+    if (advisoryElement) {
+        if (windSpeed >= 50 || windGust >= 75) {
+            advisoryElement.className = 'wind-advisory mt-3 alert alert-danger';
+            advisoryElement.textContent = 'Strong wind warning! Exercise caution outdoors.';
+        } else if (windSpeed >= 30 || windGust >= 50) {
+            advisoryElement.className = 'wind-advisory mt-3 alert alert-warning';
+            advisoryElement.textContent = 'Moderate wind alert. Be aware of gusty conditions.';
+        } else {
+            advisoryElement.style.display = 'none';
+        }
+    }
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function calculateWindChill(temp, windSpeed) {
@@ -77,260 +153,335 @@ function getWindAdvisory(windSpeed, gusts) {
     } else if (windSpeed >= 20) {
         return {
             message: 'Moderate winds present. Consider wind direction for field operations.',
-            class: ''
+            class: 'info'
         };
     }
     return null;
 }
 
-function generateRecommendations(weatherData) {
-    const temp = weatherData.main.temp;
-    const humidity = weatherData.main.humidity;
-    const windSpeed = weatherData.wind.speed;
-    const description = weatherData.weather[0].description.toLowerCase();
-    const rain = weatherData.rain ? weatherData.rain['1h'] : 0;
-
-    // 1. Crop Management
-    let cropRec = "Monitor crop growth and development";
-    if (temp < 10) {
-        cropRec = "Protect sensitive crops from frost damage";
-    } else if (temp > 30) {
-        cropRec = "Watch for signs of heat stress in crops";
-    } else if (temp >= 20 && temp <= 25) {
-        cropRec = "Optimal conditions for crop development";
-    }
-
-    // 2. Water Management
-    let waterRec = "Maintain regular irrigation schedule";
-    if (rain > 0) {
-        waterRec = `Rainfall detected (${rain}mm). Adjust irrigation accordingly`;
-    } else if (humidity < 30) {
-        waterRec = "Increase irrigation to combat low humidity";
-    } else if (humidity > 80) {
-        waterRec = "Reduce irrigation due to high humidity";
-    }
-
-    // 3. Field Operations
-    let operationsRec = "Conditions suitable for general field work";
-    if (windSpeed > 10) {
-        operationsRec = "High winds - postpone spraying activities";
-    } else if (description.includes('rain')) {
-        operationsRec = "Wet conditions - focus on indoor tasks";
-    } else if (description.includes('clear') && windSpeed < 5) {
-        operationsRec = "Perfect conditions for spraying operations";
-    }
-
-    // 4. Risk Management
-    let riskRec = "No significant risks identified";
-    if (humidity > 80 && temp > 20) {
-        riskRec = "High disease risk - monitor crop health";
-    } else if (windSpeed > 15) {
-        riskRec = "Strong winds - check for structural damage";
-    } else if (rain > 10) {
-        riskRec = "Heavy rain - monitor field drainage";
-    }
-
-    return [
-        { icon: 'seedling', text: cropRec },
-        { icon: 'tint', text: waterRec },
-        { icon: 'tractor', text: operationsRec },
-        { icon: 'exclamation-triangle', text: riskRec }
-    ];
-}
-
-function calculateSunTimes(sunrise, sunset) {
-    const now = new Date();
-    const sunriseDate = new Date(sunrise * 1000);
-    const sunsetDate = new Date(sunset * 1000);
+function calculateSunTimes(sunriseTimestamp, sunsetTimestamp) {
+    // Get today's date at midnight UTC
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const todayTimestamp = Math.floor(today.getTime() / 1000);
     
-    // Calculate daylight hours
-    const daylightHours = (sunset - sunrise) / 3600;
+    // Extract hours and minutes from the timestamps
+    const sunriseTime = new Date(sunriseTimestamp * 1000);
+    const sunsetTime = new Date(sunsetTimestamp * 1000);
     
-    // Calculate progress of the day
-    const totalDaySeconds = sunset - sunrise;
-    const currentSeconds = now.getTime() / 1000 - sunrise;
-    const progress = Math.min(100, Math.max(0, (currentSeconds / totalDaySeconds) * 100));
+    // Create new timestamps for today
+    const sunrise = todayTimestamp + 
+        sunriseTime.getUTCHours() * 3600 + 
+        sunriseTime.getUTCMinutes() * 60;
+    const sunset = todayTimestamp + 
+        sunsetTime.getUTCHours() * 3600 + 
+        sunsetTime.getUTCMinutes() * 60;
     
-    // Calculate civil dawn/dusk (about 30 minutes before sunrise/after sunset)
-    const civilDawn = sunrise - 1800; // 30 minutes before sunrise
-    const civilDusk = sunset + 1800; // 30 minutes after sunset
+    // Calculate civil dawn (30 minutes before sunrise)
+    const civilDawn = sunrise - 1800;
     
-    // Calculate golden hours (about 1 hour after sunrise and 1 hour before sunset)
+    // Calculate civil dusk (30 minutes after sunset)
+    const civilDusk = sunset + 1800;
+    
+    // Calculate golden hours
     const morningGoldenHour = sunrise + 3600; // 1 hour after sunrise
     const eveningGoldenHour = sunset - 3600; // 1 hour before sunset
     
-    // Calculate time until next sunrise/sunset
-    let sunriseTimeLeft = '';
-    let sunsetTimeLeft = '';
+    const now = Math.floor(Date.now() / 1000);
     
-    if (now < sunriseDate) {
-        const diff = sunriseDate - now;
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        sunriseTimeLeft = `Sunrise in ${hours}h ${minutes}m`;
-    } else {
-        sunriseTimeLeft = 'Sunrise has passed';
-    }
+    // Calculate daylight hours
+    const daylightSeconds = sunset - sunrise;
+    const daylightHours = daylightSeconds / 3600;
     
-    if (now < sunsetDate) {
-        const diff = sunsetDate - now;
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        sunsetTimeLeft = `Sunset in ${hours}h ${minutes}m`;
+    // Calculate progress through the day
+    let progress = 0;
+    if (now < sunrise) {
+        progress = 0;
+    } else if (now > sunset) {
+        progress = 100;
     } else {
-        sunsetTimeLeft = 'Sunset has passed';
+        progress = ((now - sunrise) / daylightSeconds) * 100;
     }
     
     return {
         daylightHours: daylightHours.toFixed(1),
-        progress,
-        sunriseTimeLeft,
-        sunsetTimeLeft,
+        progress: Math.min(100, Math.max(0, progress)),
+        sunrise,
+        sunset,
         civilDawn,
         civilDusk,
         morningGoldenHour,
-        eveningGoldenHour,
-        sunPosition: progress.toFixed(1)
+        eveningGoldenHour
     };
+}
+
+async function fetchWeatherData() {
+    try {
+        const response = await fetch('/api/weather');
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        
+        // Update the display with weather data
+        updateWeatherDisplay(data.weather);
+        // Update recommendations
+        updateRecommendations(data.recommendations);
+        
+    } catch (error) {
+        console.error('Error fetching weather:', error);
+        const errorDiv = document.getElementById('error-message');
+        if (errorDiv) {
+            errorDiv.textContent = `Error: ${error.message}`;
+            errorDiv.style.display = 'block';
+        }
+    }
+}
+
+function formatDateTime(timestamp) {
+    // Check if timestamp is a string in ISO format (from database)
+    if (typeof timestamp === 'string') {
+        return new Date(timestamp).toLocaleString();
+    }
+    // If it's a Unix timestamp (number)
+    return new Date(timestamp * 1000).toLocaleString();
 }
 
 function updateWeatherDisplay(data) {
-    // Main weather information
-    document.getElementById('temperature').textContent = `${Math.round(data.weather.main.temp)}°C`;
-    document.getElementById('description').textContent = data.weather.weather[0].description;
-    document.getElementById('humidity').textContent = `${data.weather.main.humidity}%`;
-    document.getElementById('wind').textContent = `${Math.round(data.weather.wind.speed * 3.6)} km/h`;
+    try {
+        // Main weather information
+        const elements = {
+            'temperature': `${Math.round(data.main.temp)}°C`,
+            'description': data.weather[0].description,
+            'humidity': `${data.main.humidity}%`,
+            'wind': `${(data.wind.speed * 3.6).toFixed(1)} km/h`,
+            'feels-like': `${Math.round(data.main.feels_like)}°C`,
+            'pressure': `${data.main.pressure} hPa`,
+            'visibility': typeof data.visibility === 'number' ? `${(data.visibility / 1000).toFixed(1)} km` : 'N/A',
+            'rain': data.rain ? `${data.rain['1h']} mm` : '0 mm'
+        };
 
-    // Detailed metrics
-    document.getElementById('feels-like').textContent = `${Math.round(data.weather.main.feels_like)}°C`;
-    document.getElementById('pressure').textContent = `${data.weather.main.pressure} hPa`;
-    document.getElementById('visibility').textContent = `${(data.weather.visibility / 1000).toFixed(1)} km`;
-    document.getElementById('rain').textContent = data.weather.rain ? `${data.weather.rain['1h']} mm` : '0 mm';
+        // Update elements that exist in the DOM
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        });
 
-    // Wind information
-    const windSpeed = Math.round(data.weather.wind.speed * 3.6); // Convert m/s to km/h
-    const windDeg = data.weather.wind.deg || 0;
-    const windGust = data.weather.wind.gust ? Math.round(data.weather.wind.gust * 3.6) : windSpeed + 5;
-    
-    // Update wind speed and direction
-    document.getElementById('wind-speed').textContent = `${windSpeed} km/h`;
-    document.getElementById('wind-direction').textContent = getWindDirection(windDeg);
-    document.getElementById('wind-direction-icon').style.transform = `rotate(${windDeg}deg)`;
-    
-    // Update compass arrow with smooth rotation
-    const compassArrow = document.getElementById('compass-arrow');
-    compassArrow.style.transform = `rotate(${windDeg}deg)`;
-    
-    // Update additional wind details
-    document.getElementById('wind-gusts').textContent = `${windGust} km/h`;
-    
-    const beaufort = getBeaufortScale(windSpeed);
-    document.getElementById('beaufort-scale').textContent = `${beaufort.scale} - ${beaufort.description}`;
-    document.getElementById('wind-conditions').textContent = beaufort.description;
-    
-    const windChill = calculateWindChill(data.weather.main.temp, windSpeed);
-    document.getElementById('wind-chill').textContent = `${windChill}°C`;
-    
-    // Update wind advisory
-    const advisory = getWindAdvisory(windSpeed, windGust);
-    const advisoryElement = document.getElementById('wind-advisory');
-    if (advisory) {
-        advisoryElement.textContent = advisory.message;
-        advisoryElement.className = `wind-advisory ${advisory.class}`;
-        advisoryElement.style.display = 'block';
-    } else {
-        advisoryElement.style.display = 'none';
+        // Update wind information
+        updateWindDisplay(data);
+
+        // Weather icon
+        const iconElement = document.getElementById('weather-icon');
+        if (iconElement) {
+            const iconClass = getWeatherIcon(data.weather[0].description);
+            iconElement.innerHTML = `<i class="fas fa-${iconClass} fa-3x"></i>`;
+        }
+
+        // Sun information
+        if (data.sys && data.sys.sunrise && data.sys.sunset) {
+            const sunTimes = calculateSunTimes(data.sys.sunrise, data.sys.sunset);
+            
+            // Update daylight information
+            const daylightHoursElement = document.getElementById('daylight-hours');
+            if (daylightHoursElement) {
+                daylightHoursElement.textContent = `${sunTimes.daylightHours} hours of daylight`;
+            }
+
+            const sunPositionElement = document.getElementById('sun-position');
+            if (sunPositionElement) {
+                sunPositionElement.textContent = `Sun is ${sunTimes.progress.toFixed(1)}% through the day`;
+            }
+
+            // Update dawn and dusk times in the progress bar
+            const dawnTimeElement = document.getElementById('dawn-time');
+            if (dawnTimeElement) {
+                dawnTimeElement.textContent = formatTime(sunTimes.civilDawn);
+            }
+
+            const duskTimeElement = document.getElementById('dusk-time');
+            if (duskTimeElement) {
+                duskTimeElement.textContent = formatTime(sunTimes.civilDusk);
+            }
+
+            const sunElements = {
+                'sunrise': formatTime(sunTimes.sunrise),
+                'sunset': formatTime(sunTimes.sunset),
+                'sunrise-time-left': getTimeUntil(sunTimes.sunrise),
+                'sunset-time-left': getTimeUntil(sunTimes.sunset),
+                'civil-dawn': formatTime(sunTimes.civilDawn),
+                'civil-dusk': formatTime(sunTimes.civilDusk),
+                'morning-golden-hour': formatTime(sunTimes.morningGoldenHour),
+                'evening-golden-hour': formatTime(sunTimes.eveningGoldenHour)
+            };
+
+            Object.entries(sunElements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                }
+            });
+
+            // Update progress bar if it exists
+            const progressBar = document.getElementById('daylight-progress');
+            if (progressBar) {
+                progressBar.style.width = `${sunTimes.progress}%`;
+            }
+        }
+
+        // Last updated
+        const lastUpdated = document.getElementById('last-updated');
+        if (lastUpdated && data.timestamp) {
+            lastUpdated.textContent = formatDateTime(data.timestamp);
+        }
+
+    } catch (error) {
+        console.error('Error updating display:', error);
     }
-
-    // Sun schedule
-    document.getElementById('sunrise').textContent = formatTime(data.weather.sys.sunrise);
-    document.getElementById('sunset').textContent = formatTime(data.weather.sys.sunset);
-        
-    // Calculate and update sun times
-    const sunTimes = calculateSunTimes(data.weather.sys.sunrise, data.weather.sys.sunset);
-    
-    // Update basic info
-    document.getElementById('sunrise-time-left').textContent = sunTimes.sunriseTimeLeft;
-    document.getElementById('sunset-time-left').textContent = sunTimes.sunsetTimeLeft;
-    document.getElementById('daylight-hours').textContent = `${sunTimes.daylightHours} hours of daylight`;
-    document.getElementById('daylight-progress').style.width = `${sunTimes.progress}%`;
-    
-    // Update additional details
-    document.getElementById('civil-dawn').textContent = formatTime(sunTimes.civilDawn);
-    document.getElementById('civil-dusk').textContent = formatTime(sunTimes.civilDusk);
-    document.getElementById('morning-golden-hour').textContent = formatTime(sunTimes.morningGoldenHour);
-    document.getElementById('evening-golden-hour').textContent = formatTime(sunTimes.eveningGoldenHour);
-    document.getElementById('dawn-time').textContent = formatTime(sunTimes.civilDawn);
-    document.getElementById('dusk-time').textContent = formatTime(sunTimes.civilDusk);
-    document.getElementById('sun-position').textContent = `Sun is ${sunTimes.sunPosition}% through the day`;
-
-    // Update weather icon
-    const iconMap = {
-        '01d': 'sun',
-        '01n': 'moon',
-        '02d': 'cloud-sun',
-        '02n': 'cloud-moon',
-        '03d': 'cloud',
-        '03n': 'cloud',
-        '04d': 'clouds',
-        '04n': 'clouds',
-        '09d': 'cloud-showers-heavy',
-        '09n': 'cloud-showers-heavy',
-        '10d': 'cloud-sun-rain',
-        '10n': 'cloud-moon-rain',
-        '11d': 'bolt',
-        '11n': 'bolt',
-        '13d': 'snowflake',
-        '13n': 'snowflake',
-        '50d': 'smog',
-        '50n': 'smog'
-    };
-    const iconCode = data.weather.weather[0].icon;
-    const iconClass = iconMap[iconCode] || 'question';
-    document.getElementById('weather-icon').innerHTML = 
-        `<i class="fas fa-${iconClass}"></i>`;
-
-    // Update recommendations
-    const recommendationsList = document.getElementById('recommendations-list');
-    const recommendations = generateRecommendations(data.weather);
-    
-    recommendationsList.innerHTML = recommendations
-        .map(rec => `
-            <div class="recommendation-item">
-                <i class="fas fa-${rec.icon}"></i>
-                <span>${rec.text}</span>
-            </div>
-        `)
-        .join('');
-
-    // Update timestamp
-    document.getElementById('last-updated').textContent = 
-        new Date().toLocaleString();
 }
 
-function fetchWeatherData() {
-    fetch('/api/weather')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('Error:', data.error);
-                return;
-            }
-            updateWeatherDisplay(data);
-        })
-        .catch(error => console.error('Error:', error));
+function getTimeUntil(timestamp) {
+    const now = Math.floor(Date.now() / 1000);
+    
+    const diff = timestamp - now;
+    
+    if (diff < 0) {
+        return 'Passed';
+    }
+    
+    const hours = Math.floor(diff / 3600);
+    const minutes = Math.floor((diff % 3600) / 60);
+    
+    if (hours === 0) {
+        return `In ${minutes}m`;
+    }
+    
+    return `In ${hours}h ${minutes}m`;
+}
+
+function getWeatherIcon(description) {
+    description = description.toLowerCase();
+    if (description.includes('rain')) return 'cloud-rain';
+    if (description.includes('snow')) return 'snowflake';
+    if (description.includes('cloud')) return 'cloud';
+    if (description.includes('clear')) return 'sun';
+    if (description.includes('thunder')) return 'bolt';
+    if (description.includes('fog') || description.includes('mist')) return 'smog';
+    return 'cloud';
+}
+
+function updateRecommendations(recommendations) {
+    const recommendationsContainer = document.getElementById('recommendations-list');
+    if (!recommendationsContainer) {
+        console.error('Recommendations container not found');
+        return;
+    }
+    
+    // Clear existing content
+    recommendationsContainer.innerHTML = '';
+    
+    if (!recommendations || recommendations.length === 0) {
+        recommendationsContainer.innerHTML = '<p class="text-center text-muted">No recommendations at this time.</p>';
+        return;
+    }
+    
+    // Group recommendations by category
+    const groupedRecs = recommendations.reduce((acc, rec) => {
+        if (!acc[rec.category]) {
+            acc[rec.category] = [];
+        }
+        acc[rec.category].push(rec);
+        return acc;
+    }, {});
+    
+    // Create a list for each category
+    Object.entries(groupedRecs).forEach(([category, recs]) => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'recommendation-category mb-3';
+        
+        const categoryTitle = document.createElement('h6');
+        categoryTitle.className = 'text-primary mb-2 d-flex align-items-center';
+        categoryTitle.innerHTML = `<i class="fas fa-${getCategoryIcon(category)} me-2"></i> ${formatCategory(category)}`;
+        categoryDiv.appendChild(categoryTitle);
+        
+        const recList = document.createElement('ul');
+        recList.className = 'list-unstyled mb-0';
+        
+        recs.forEach(rec => {
+            const recItem = document.createElement('li');
+            recItem.className = 'mb-2 p-2 bg-light rounded';
+            const priorityIcon = rec.priority === 1 ? 'exclamation-triangle text-warning' : 'info-circle text-info';
+            recItem.innerHTML = `
+                <div class="d-flex align-items-start">
+                    <i class="fas fa-${priorityIcon} me-2 mt-1"></i>
+                    <span>${rec.text}</span>
+                </div>
+            `;
+            
+            recList.appendChild(recItem);
+        });
+        
+        categoryDiv.appendChild(recList);
+        recommendationsContainer.appendChild(categoryDiv);
+    });
+}
+
+function getCategoryIcon(category) {
+    const icons = {
+        'temperature': 'thermometer-half',
+        'humidity': 'tint',
+        'wind': 'wind',
+        'rain': 'cloud-rain',
+        'default': 'info-circle'
+    };
+    return icons[category] || icons.default;
+}
+
+function formatCategory(category) {
+    return category.charAt(0).toUpperCase() + category.slice(1);
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize map with farm coordinates
-    const lat = document.getElementById('coordinates').dataset.lat;
-    const lon = document.getElementById('coordinates').dataset.lon;
-    initMap(lat, lon);
-
-    // Initial fetch
+    // Get initial weather data
     fetchWeatherData();
-
-    // Refresh every 5 minutes
+    
+    // Update weather data every 5 minutes
     setInterval(fetchWeatherData, 5 * 60 * 1000);
+    
+    // Add refresh button handler
+    const refreshButton = document.getElementById('refresh-weather');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', async function() {
+            try {
+                this.disabled = true;
+                const icon = this.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-spinner fa-spin';
+                }
+                await fetchWeatherData();
+            } catch (error) {
+                console.error('Error refreshing weather:', error);
+            } finally {
+                this.disabled = false;
+                const icon = this.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-sync-alt';
+                }
+            }
+        });
+    }
 });
+
+// Initialize map with farm coordinates
+const coordinates = document.getElementById('coordinates');
+if (coordinates) {
+    const lat = coordinates.dataset.lat;
+    const lon = coordinates.dataset.lon;
+    if (lat && lon) {
+        window.weatherMap = initMap(parseFloat(lat), parseFloat(lon));
+    }
+}

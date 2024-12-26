@@ -17,15 +17,9 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#temperature" class="nav-link">
-                        <i class="fas fa-thermometer-half"></i>
-                        <span>Temperature</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#humidity" class="nav-link">
-                        <i class="fas fa-tint"></i>
-                        <span>Humidity</span>
+                    <a href="{{ url_for('location') }}" class="nav-link {% if active_page == 'location' %}active{% else %}link-dark{% endif %}">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Farm Location</span>
                     </a>
                 </li>
             </ul>
@@ -35,15 +29,9 @@
             <div class="section-title">SETTINGS</div>
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a href="#settings" class="nav-link">
+                    <a href="{{ url_for('settings') }}" class="nav-link {% if active_page == 'settings' %}active{% else %}link-dark{% endif %}">
                         <i class="fas fa-cog"></i>
                         <span>Settings</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#profile" class="nav-link">
-                        <i class="fas fa-user"></i>
-                        <span>Profile</span>
                     </a>
                 </li>
             </ul>

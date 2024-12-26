@@ -1,0 +1,86 @@
+{% include 'partials/header.html' %}
+<body>
+    <div class="app-container">
+        {% include 'partials/sidebar.html' %}
+        
+        <main class="main-content">
+            <header class="content-header">
+                <div class="d-flex align-items-center gap-3">
+                    <h1 class="h3 mb-0">Temperature History</h1>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="location-info">
+                        <i class="fas fa-map-marker-alt"></i> 
+                        <span id="coordinates" data-lat="{{ farm_lat }}" data-lon="{{ farm_lon }}">{{ farm_lat }}°N, {{ farm_lon }}°W</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div class="grid-container">
+                    <!-- Temperature Chart -->
+                    <div class="col-12 mb-4">
+                        <div class="card weather-card">
+                            <div class="card-header bg-primary">
+                                <h5 class="mb-0 text-white"><i class="fas fa-chart-line"></i> Temperature Trends</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="temperatureChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Temperature Stats -->
+                    <div class="col-12">
+                        <div class="card weather-card">
+                            <div class="card-header bg-primary">
+                                <h5 class="mb-0 text-white"><i class="fas fa-thermometer-half"></i> Temperature Statistics</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 mb-3">
+                                        <div class="metric-card">
+                                            <i class="fas fa-temperature-high text-danger"></i>
+                                            <h5>Max Temperature</h5>
+                                            <h3 id="maxTemp">--°C</h3>
+                                            <small class="text-muted" id="maxTempTime">--</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="metric-card">
+                                            <i class="fas fa-temperature-low text-info"></i>
+                                            <h5>Min Temperature</h5>
+                                            <h3 id="minTemp">--°C</h3>
+                                            <small class="text-muted" id="minTempTime">--</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="metric-card">
+                                            <i class="fas fa-equals text-success"></i>
+                                            <h5>Average Temperature</h5>
+                                            <h3 id="avgTemp">--°C</h3>
+                                            <small class="text-muted">Last 24 hours</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="metric-card">
+                                            <i class="fas fa-exchange-alt text-warning"></i>
+                                            <h5>Temperature Range</h5>
+                                            <h3 id="tempRange">--°C</h3>
+                                            <small class="text-muted">Last 24 hours</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="{{ url_for('static', filename='js/temperature.js') }}"></script>
+</body>
+</html>
