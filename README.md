@@ -1,19 +1,97 @@
-# Farm Weather Monitor
+# Weather Application
 
-A real-time weather monitoring system for precision agriculture using the OpenWeatherMap API. This application helps farmers optimize their agricultural practices by providing current weather data and automated recommendations for irrigation, fertilization, and crop protection.
+A weather monitoring application with real-time updates and recommendations.
+
+## Project Structure
+
+```
+weather/
+├── backend/           # Python Flask backend
+│   ├── src/          # Source code
+│   ├── migrations/   # Database migrations
+│   ├── config/       # Configuration files
+│   └── requirements.txt
+│
+└── frontend/         # Next.js frontend
+    ├── src/         # Source code
+    ├── public/      # Static files
+    └── package.json
+```
+
+## Backend Setup
+
+1. Navigate to the backend directory:
+```bash
+cd backend
+```
+
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Copy .env.example to .env and fill in your credentials:
+```bash
+cp .env.example .env
+```
+
+5. Run the development server:
+```bash
+python app.py
+```
+
+## Frontend Setup
+
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Run the development server:
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+## Environment Variables
+
+### Backend (.env)
+- OPENWEATHERMAP_API_KEY
+- APPWRITE_ENDPOINT
+- APPWRITE_PROJECT_ID
+- APPWRITE_API_KEY
+- APPWRITE_DATABASE_ID
+- PORT
+
+### Frontend (.env.local)
+- NEXT_PUBLIC_API_URL=http://localhost:5000/api
 
 ## Features
 
-- Real-time weather monitoring
-- Automated farming recommendations based on weather conditions
-- Web-based dashboard with responsive design
-- Periodic weather data logging
-- RESTful API endpoints for weather data
+- Real-time weather updates
+- Historical weather data
+- Weather recommendations
+- Location customization
+- Responsive design
 
 ## Tech Stack
 
 - Backend: Python/Flask
-- Frontend: HTML5, Bootstrap 5, JavaScript
+- Frontend: Next.js
 - API: OpenWeatherMap
 - Deployment: Railway
 
@@ -22,62 +100,6 @@ A real-time weather monitoring system for precision agriculture using the OpenWe
 - Python 3.7+
 - OpenWeatherMap API key
 - Git
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/farm-weather-monitor.git
-cd farm-weather-monitor
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env
-```
-Edit `.env` and add your OpenWeatherMap API key and farm coordinates.
-
-4. Run the application:
-```bash
-python app.py
-```
-
-The application will be available at `http://localhost:8080`
-
-## Environment Variables
-
-- `OPENWEATHERMAP_API_KEY`: Your OpenWeatherMap API key
-- `FARM_LATITUDE`: Latitude of your farm location
-- `FARM_LONGITUDE`: Longitude of your farm location
-
-## API Endpoints
-
-- `GET /`: Web dashboard
-- `GET /api/weather`: Current weather data and recommendations
-
-## Deployment
-
-### Railway
-
-1. Create a new project on Railway
-2. Connect your GitHub repository
-3. Add environment variables in Railway dashboard
-4. Deploy!
-
-Railway will automatically detect the Procfile and deploy the application.
-
-## Development
-
-To run the application in development mode:
-
-```bash
-flask run --debug --port 8080
-```
 
 ## Contributing
 
@@ -94,5 +116,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - OpenWeatherMap for providing the weather data API
-- Bootstrap for the frontend framework
+- Next.js for the frontend framework
 - Flask for the web framework
