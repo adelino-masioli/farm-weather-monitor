@@ -6,22 +6,40 @@ import useSWR from "swr"
 import { CloudSun } from "lucide-react"
 
 interface WeatherData {
-  temperature: number
-  humidity: number
-  wind_speed: number
+  $id: string
+  $createdAt: string
+  $updatedAt: string
+  temperature: string
+  humidity: string
+  wind_speed: string
   description: string
   icon: string
-  recommendations: string[]
   timestamp: string
 }
 
+interface CurrentWeatherData {
+  weather: WeatherData
+  recommendations: string[]
+}
+
 export function WeatherCard() {
-  const { data: currentWeather, error } = useSWR('currentWeather', api.getCurrentWeather, {
+  const { data: currentWeather, error } = useSWR<CurrentWeatherData>('currentWeather', api.getCurrentWeather, {
     refreshInterval: 300000 // refresh every 5 minutes
   })
 
-  if (error) return <div>Error loading weather data</div>
-  if (!currentWeather) return <div>Loading...</div>
+
+  if (error) {
+    return <div>Error loading weather data</div>
+  }
+  
+  if (!currentWeather?.weather?.temperature) {
+    return <div>Loading...</div>
+  }
+
+  // Safe parsing of temperature
+  const temperature = currentWeather.weather.temperature
+  const tempNumber = temperature ? parseFloat(temperature) : null
+  const displayTemp = tempNumber !== null ? tempNumber.toFixed(1) : '--'
 
   return (
     <Card className="col-span-full">
@@ -35,10 +53,25 @@ export function WeatherCard() {
       <CardContent>
         <div className="mt-4 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-5xl font-bold">{currentWeather.temperature}°C</div>
+            <div className="text-5xl font-bold">{displayTemp}°C</div>
             <div className="mt-2 text-xl text-muted-foreground capitalize">
-              {currentWeather.description}
+              {currentWeather.weather.description || 'No description available'}
             </div>
+            {currentWeather.recommendations && currentWeather.recommendations.length > 0 && (
+              <div className="mt-6 space-y-2">
+                {currentWeather.recommendations.map((recommendation, index) => (
+                  <div key={index} className="text-sm text-muted-foreground  flex items-center gap-2">
+                    <img
+                      src={`http://openweathermap.org/img/w/${currentWeather.weather.icon}.png`}
+                      alt={currentWeather.weather.description}
+                      className="w-12 h-12"
+                    />
+
+                    {recommendation}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

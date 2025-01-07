@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { api } from "@/lib/api"
 import useSWR from "swr"
 import { 
-  Droplets,
+  Droplets, 
   Gauge, 
   Thermometer, 
   Wind,
@@ -30,39 +30,56 @@ export function DetailedMetrics() {
 
   if (!mounted) return null
   if (error) return <div>Error loading weather data</div>
-  if (!currentWeather) return <div>Loading...</div>
+  if (!currentWeather?.weather) return <div>Loading...</div>
 
-  // Parse location string (comes as "{'lat': '41.1579', 'lon': '-8.6291', 'name': 'Porto Municipality'}")
-  const location = JSON.parse(currentWeather.location.replace(/'/g, '"'))
+  let location = { lat: '0', lon: '0', name: 'Unknown Location' }
+  let sun = { sunrise: '0', sunset: '0' }
 
-  // Parse sun string (comes as "{'sunrise': '1735199920', 'sunset': '1735233098'}")
-  const sun = JSON.parse(currentWeather.sun.replace(/'/g, '"'))
+  try {
+    if (currentWeather.weather.location) {
+      location = JSON.parse(currentWeather.weather.location.replace(/'/g, '"'))
+    }
+  } catch (e) {
+    console.error('Error parsing location:', e)
+  }
+
+  try {
+    if (currentWeather.weather.sun) {
+      sun = JSON.parse(currentWeather.weather.sun.replace(/'/g, '"'))
+    }
+  } catch (e) {
+    console.error('Error parsing sun data:', e)
+  }
 
   const formatTime = (timestamp: string) => {
-    const date = new Date(parseInt(timestamp) * 1000) // Convert Unix timestamp to milliseconds
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    })
+    try {
+      const date = new Date(parseInt(timestamp) * 1000)
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    } catch (e) {
+      return '--:--'
+    }
   }
 
   const metrics = [
     {
       title: "Temperature",
-      value: `${parseFloat(currentWeather.temperature).toFixed(1)}°C`,
+      value: `${parseFloat(currentWeather.weather.temperature || '0').toFixed(1)}°C`,
       icon: Thermometer,
       description: "Current temperature",
     },
     {
       title: "Feels Like",
-      value: `${parseFloat(currentWeather.feels_like).toFixed(1)}°C`,
+      value: `${parseFloat(currentWeather.weather.feels_like || '0').toFixed(1)}°C`,
       icon: Thermometer,
       description: "Perceived temperature",
     },
     {
       title: "Humidity",
-      value: `${currentWeather.humidity}%`,
+      value: `${currentWeather.weather.humidity || '0'}%`,
       icon: Droplets,
       description: "Relative humidity",
     },
@@ -70,9 +87,9 @@ export function DetailedMetrics() {
       title: "Wind",
       value: (
         <div className="space-y-1">
-          <div>Speed: {currentWeather.wind_speed} m/s</div>
-          <div>Gust: {currentWeather.wind_gust} m/s</div>
-          <div>Direction: {currentWeather.wind_direction}°</div>
+          <div>Speed: {currentWeather.weather.wind_speed || '0'} m/s</div>
+          <div>Gust: {currentWeather.weather.wind_gust || '0'} m/s</div>
+          <div>Direction: {currentWeather.weather.wind_direction || '0'}°</div>
         </div>
       ),
       icon: Wind,
@@ -80,13 +97,13 @@ export function DetailedMetrics() {
     },
     {
       title: "Pressure",
-      value: `${currentWeather.pressure} hPa`,
+      value: `${currentWeather.weather.pressure || '0'} hPa`,
       icon: Gauge,
       description: "Atmospheric pressure",
     },
     {
       title: "Visibility",
-      value: `${(parseInt(currentWeather.visibility) / 1000).toFixed(1)} km`,
+      value: `${((parseInt(currentWeather.weather.visibility || '0')) / 1000).toFixed(1)} km`,
       icon: Eye,
       description: "Current visibility",
     },
@@ -100,39 +117,23 @@ export function DetailedMetrics() {
         </div>
       ),
       icon: MapPin,
-      description: "Weather station location",
+      description: "Current location",
     },
     {
       title: "Sun",
       value: (
         <div className="space-y-1">
-          <div>Rise: {formatTime(sun.sunrise)}</div>
-          <div>Set: {formatTime(sun.sunset)}</div>
+          <div>Sunrise: {formatTime(sun.sunrise)}</div>
+          <div>Sunset: {formatTime(sun.sunset)}</div>
         </div>
       ),
       icon: Sunrise,
-      description: "Sunrise and sunset times",
-    },
-    {
-      title: "Weather",
-      value: (
-        <div className="flex items-center gap-2">
-          <Image 
-            src={`https://openweathermap.org/img/wn/${currentWeather.icon}.png`}
-            alt={currentWeather.description}
-            width={40}
-            height={40}
-          />
-          <span className="capitalize">{currentWeather.description}</span>
-        </div>
-      ),
-      icon: null,
-      description: "Current conditions",
+      description: "Sun times",
     },
   ]
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {metrics.map((metric) => (
         <Card key={metric.title}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -142,9 +143,7 @@ export function DetailedMetrics() {
             {metric.icon && <metric.icon className="h-4 w-4 text-muted-foreground" />}
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {metric.value}
-            </div>
+            <div className="text-2xl font-bold">{metric.value}</div>
             <p className="text-xs text-muted-foreground">
               {metric.description}
             </p>

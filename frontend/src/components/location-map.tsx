@@ -103,7 +103,11 @@ export function LocationMap() {
   // Parse location string and handle potential errors
   let location;
   try {
-    location = JSON.parse(currentWeather.location.replace(/'/g, '"'));
+    if (currentWeather?.weather?.location) {
+      location = JSON.parse(currentWeather.weather.location.replace(/'/g, '"'));
+    } else {
+      location = DEFAULT_LOCATION;
+    }
   } catch (err) {
     console.error('Error parsing location:', err);
     location = DEFAULT_LOCATION;
