@@ -2,7 +2,13 @@
 
 A comprehensive weather monitoring application designed specifically for farm environments, providing real-time updates, historical data analysis, and actionable recommendations for agricultural activities.
 
-![Farm Weather Monitor](https://github.com/adelino-masioli/farm-weather-monitor/raw/main/frontend/public/screenshot.png)
+![Farm Weather Monitor](/screenshot/1.png)
+
+![Farm Weather Monitor](/screenshot/2.png)
+
+![Farm Weather Monitor](/screenshot/3.png)
+
+![Farm Weather Monitor](/screenshot/4.png)
 
 ## Overview
 
