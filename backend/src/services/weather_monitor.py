@@ -12,7 +12,6 @@ load_dotenv()
 class WeatherMonitor:
     def __init__(self, api_key=None, farm_lat=None, farm_lon=None):
         self.api_key = api_key or os.getenv('OPENWEATHERMAP_API_KEY')
-        print(f"Debug: Using API key: {self.api_key}")  # Debug line
         self.latitude = farm_lat or float(os.getenv('FARM_LATITUDE', '0'))
         self.longitude = farm_lon or float(os.getenv('FARM_LONGITUDE', '0'))
         self.base_url = "https://api.openweathermap.org/data/2.5"  # Changed to HTTPS

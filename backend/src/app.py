@@ -8,6 +8,8 @@ import time
 
 from backend.src.services.weather_service import WeatherService
 from backend.src.controllers.weather_controller import WeatherController
+from backend.src.services.settings_service import SettingsService
+from backend.src.controllers.settings_controller import SettingsController
 
 # Load environment variables
 load_dotenv()
@@ -20,20 +22,24 @@ def create_app():
     weather_service = WeatherService(
         api_key=os.getenv('OPENWEATHERMAP_API_KEY')
     )
+    settings_service = SettingsService()
+    
     weather_controller = WeatherController(weather_service)
+    settings_controller = SettingsController(settings_service)
 
     # Register routes
     app.register_blueprint(weather_controller.bp)
+    app.register_blueprint(settings_controller.bp)
 
-    return app, weather_service
+    return app, weather_service, settings_service
 
-def background_task(weather_service):
+def background_task(weather_service, settings_service):
     while True:
         schedule.run_pending()
         time.sleep(1)
 
 def main():
-    app, weather_service = create_app()
+    app, weather_service, settings_service = create_app()
 
     # Schedule weather updates
     schedule.every(30).minutes.do(weather_service.update_weather_data)
@@ -43,7 +49,7 @@ def main():
     weather_service.update_weather_data()
 
     # Start the background task in a separate thread
-    bg_thread = threading.Thread(target=background_task, args=(weather_service,))
+    bg_thread = threading.Thread(target=background_task, args=(weather_service, settings_service))
     bg_thread.daemon = True
     bg_thread.start()
 

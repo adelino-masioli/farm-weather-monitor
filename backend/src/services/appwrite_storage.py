@@ -6,6 +6,7 @@ from datetime import datetime
 
 class AppwriteStorageService:
     def __init__(self):
+        
         self.client = Client()
         self.client.set_endpoint(os.getenv('APPWRITE_ENDPOINT'))
         self.client.set_project(os.getenv('APPWRITE_PROJECT_ID'))
@@ -14,6 +15,7 @@ class AppwriteStorageService:
         self.database = Databases(self.client)
         self.database_id = os.getenv('APPWRITE_DATABASE_ID')
         self.collection_id = os.getenv('APPWRITE_COLLECTION_ID')
+        self.recommendations_collection_id = os.getenv('APPWRITE_RECOMMENDATIONS_COLLECTION_ID')
 
     def save_weather_data(self, weather_data: dict):
         try:
@@ -28,7 +30,8 @@ class AppwriteStorageService:
                 document_id=ID.unique(),
                 data=weather_data
             )
-            return weather_data
+            # Return only the data portion of the document
+            return document
         except Exception as e:
             print(f"Error saving weather data to Appwrite: {str(e)}")
             return None
@@ -46,6 +49,7 @@ class AppwriteStorageService:
             )
             
             if result['total'] > 0:
+                # Return the document data directly
                 return result['documents'][0]
             return None
         except Exception as e:
@@ -77,3 +81,27 @@ class AppwriteStorageService:
         # For now, settings are stored in environment variables
         # You might want to create a separate collection for settings in Appwrite
         return settings
+
+    def get_weather_recommendations(self, condition_value):
+        try:
+            # Check if recommendations collection ID is available
+            if not self.recommendations_collection_id:
+                print("Warning: APPWRITE_RECOMMENDATIONS_COLLECTION_ID not set")
+                return []
+
+            # Query recommendations based on condition_value
+            result = self.database.list_documents(
+                database_id=self.database_id,
+                collection_id=self.recommendations_collection_id,
+                queries=[
+                    f'equal("condition_value", "{condition_value}")',
+                    'limit(5)'  # Limit to 5 recommendations
+                ]
+            )
+            
+            if result['total'] > 0:
+                return [doc['recommendation'] for doc in result['documents']]
+            return []
+        except Exception as e:
+            print(f"Error getting recommendations from Appwrite: {str(e)}")
+            return []

@@ -1,4 +1,6 @@
 {
-  "latitude": "41.1579",
-  "longitude": "-8.6291"
+  "farm_latitude": "41.1579",
+  "farm_longitude": "-8.6291",
+  "extreme_weather_alerts": false,
+  "daily_report": true
 }
