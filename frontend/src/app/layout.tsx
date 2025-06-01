@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Sidebar } from '@/components/sidebar';
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,6 +24,7 @@ export default function RootLayout({
           <main className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900">
             <div className="container mx-auto py-6 px-4">
               {children}
+              <Toaster />
             </div>
           </main>
         </div>

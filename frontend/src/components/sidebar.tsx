@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, MapPin, History, Settings, CloudSun } from "lucide-react"
+import { LayoutDashboard, MapPin, History, Settings } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 

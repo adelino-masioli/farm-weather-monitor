@@ -1,71 +1,97 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { api } from "@/lib/api"
-import useSWR from "swr"
-import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { api } from "@/lib/api";
+// Import the correct types from your centralized file
+import { WeatherHistoryResponse, WeatherHistoryDocument } from "@/types/weather"; // Adjust the path if necessary
+import useSWR from "swr";
+import { useEffect, useState } from "react";
 
-interface WeatherRecord {
-  temperature: number
-  humidity: number
-  wind_speed: number
-  description: string
-  timestamp: string
-}
+// It's no longer necessary to define WeatherRecord locally if WeatherHistoryDocument is used
 
 export function WeatherHistory() {
-  const { data: history, error } = useSWR('history', api.getWeatherHistory)
-  const [mounted, setMounted] = useState(false)
+  // Use the correct type for SWR and rename 'data' to something more descriptive
+  const { data: historyResponse, error } = useSWR<WeatherHistoryResponse>('history', api.getWeatherHistory);
+  const [mounted, setMounted] = useState(false);
+
+  // console.log(historyResponse); // This will show the object { total: ..., documents: [...] }
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
-  if (!mounted) return null
-  if (error) return <div>Error loading weather history</div>
-  if (!history) return <div>Loading...</div>
-
-  const formatDateTime = (timestamp: string) => {
-    const date = new Date(timestamp)
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    })
+  if (!mounted) return null; // Or a skeleton/loading component
+  if (error) return <div>Error loading weather history. Please try again later.</div>;
+  
+  // Check if historyResponse and historyResponse.documents exist
+  if (!historyResponse || !historyResponse.documents) {
+    return <div>Loading weather history...</div>;
   }
+
+  const formatDateTime = (timestamp: string | undefined) => {
+    if (!timestamp) return 'N/A';
+    try {
+      const date = new Date(timestamp);
+      // Check if the date is valid after conversion
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleString('pt-BR', { // Using 'pt-BR' as an example for Brazilian format
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false // Using 24-hour format as an example
+      });
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return 'Invalid Date';
+    }
+  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Weather History</CardTitle>
+        {historyResponse.total > 0 && (
+          <p className="text-sm text-muted-foreground">
+            Showing {historyResponse.documents.length} of {historyResponse.total} records.
+          </p>
+        )}
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Time</TableHead>
-              <TableHead>Temperature (°C)</TableHead>
-              <TableHead>Humidity (%)</TableHead>
-              <TableHead>Wind Speed (m/s)</TableHead>
-              <TableHead>Description</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {history.map((record: WeatherRecord, index) => (
-              <TableRow key={index}>
-                <TableCell>{formatDateTime(record.timestamp)}</TableCell>
-                <TableCell>{record.temperature}</TableCell>
-                <TableCell>{record.humidity}</TableCell>
-                <TableCell>{record.wind_speed}</TableCell>
-                <TableCell className="capitalize">{record.description}</TableCell>
+        {historyResponse.documents.length === 0 ? (
+          <p>No weather history records found.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Time</TableHead>
+                <TableHead>Temperature (°C)</TableHead>
+                <TableHead>Humidity (%)</TableHead>
+                <TableHead>Wind Speed (m/s)</TableHead>
+                <TableHead>Description</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {/* Map over historyResponse.documents and use the type WeatherHistoryDocument */}
+              {historyResponse.documents.map((record: WeatherHistoryDocument) => (
+                // Use the Appwrite $id as a key if available and unique
+                <TableRow key={record.$id || record.timestamp}> 
+                  <TableCell>{formatDateTime(record.$createdAt || record.timestamp)}</TableCell>
+                  {/* Convert strings to numbers for display or calculations if necessary */}
+                  <TableCell>{parseFloat(record.temperature).toFixed(1)}</TableCell>
+                  <TableCell>{parseFloat(record.humidity).toFixed(0)}</TableCell>
+                  <TableCell>{parseFloat(record.wind_speed).toFixed(1)}</TableCell>
+                  <TableCell className="capitalize">{record.description}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
-  )
+  );
 }

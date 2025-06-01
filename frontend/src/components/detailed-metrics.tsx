@@ -8,12 +8,10 @@ import {
   Gauge, 
   Thermometer, 
   Wind,
-  Navigation,
   Eye,
   MapPin,
   Sunrise
 } from "lucide-react"
-import Image from "next/image"
 import { useEffect, useState } from "react"
 import { WeatherData } from "@/types/weather"
 

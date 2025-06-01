@@ -4,29 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { api } from "@/lib/api"
 import useSWR from "swr"
 import { CloudSun } from "lucide-react"
+import Image from "next/image"
 
-interface WeatherData {
-  $id: string
-  $createdAt: string
-  $updatedAt: string
-  temperature: string
-  humidity: string
-  wind_speed: string
-  description: string
-  icon: string
-  timestamp: string
-}
 
-interface CurrentWeatherData {
-  weather: WeatherData
-  recommendations: string[]
-}
+import { CurrentWeatherDataResponse } from "@/types/weather";
 
 export function WeatherCard() {
-  const { data: currentWeather, error } = useSWR<CurrentWeatherData>('currentWeather', api.getCurrentWeather, {
-    refreshInterval: 300000 // refresh every 5 minutes
-  })
-
+  const { data: currentWeather, error } = useSWR<CurrentWeatherDataResponse>(
+    'currentWeather', 
+    api.getCurrentWeather,
+    {
+      refreshInterval: 300000 
+    }
+  );
 
   if (error) {
     return <div>Error loading weather data</div>
@@ -61,12 +51,14 @@ export function WeatherCard() {
               <div className="mt-6 space-y-2">
                 {currentWeather.recommendations.map((recommendation, index) => (
                   <div key={index} className="text-sm text-muted-foreground  flex items-center gap-2">
-                    <img
+                    <Image
                       src={`http://openweathermap.org/img/w/${currentWeather.weather.icon}.png`}
                       alt={currentWeather.weather.description}
+                      width={48}
+                      height={48}
+                      sizes="48px"
                       className="w-12 h-12"
                     />
-
                     {recommendation}
                   </div>
                 ))}
