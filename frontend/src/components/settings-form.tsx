@@ -206,7 +206,7 @@ export function SettingsForm() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor={FIELDS.FARM_LATITUDE}>Farm Latitude</Label>
+              <Label htmlFor={FIELDS.FARM_LATITUDE}>Farm Latitude (41,15793 | -8,6293, 38.7169 | -9.1399, 41.1579 | -8.6291, 37.0194 | -7.9304)</Label>
               <Input
                 id={FIELDS.FARM_LATITUDE}
                 type="number"

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { api } from "@/lib/api"
 import useSWR from "swr"
-import { CloudSun } from "lucide-react"
+import { CloudSun, MapPin } from "lucide-react"
 import Image from "next/image"
 
 
@@ -31,12 +31,28 @@ export function WeatherCard() {
   const tempNumber = temperature ? parseFloat(temperature) : null
   const displayTemp = tempNumber !== null ? tempNumber.toFixed(1) : '--'
 
+  let locationName = 'Localização Desconhecida';
+  try {
+    if (currentWeather.weather.location) {
+      // The 'location' field is a JSON string, so we need to convert it
+      const locationData = JSON.parse(currentWeather.weather.location);
+      locationName = locationData.name;
+    }
+  } catch (e) {
+    console.error("Failed to parse location data in WeatherCard:", e);
+  }
+
   return (
     <Card className="col-span-full">
       <CardHeader className="flex flex-row items-center space-y-0 pb-2">
         <div className="flex-1">
           <CardTitle className="text-2xl font-bold">Current Weather</CardTitle>
           <p className="text-sm text-muted-foreground">Real-time weather conditions</p>
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+            <MapPin className="h-4 w-4 flex-shrink-0" />
+            <span>{locationName}</span>
+          </div>
         </div>
         <CloudSun className="h-8 w-8 text-muted-foreground" />
       </CardHeader>

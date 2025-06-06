@@ -4,7 +4,9 @@ from appwrite.services.databases import Databases
 from appwrite.id import ID as AppwriteID
 from appwrite.query import Query as AppwriteQuery
 from datetime import datetime
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
+import json
+import math
 
 from .config import settings
 from .models import FarmSettingsData, WeatherData, WeatherLocation, SunData
@@ -75,7 +77,7 @@ class OpenWeatherMapService:
 class FarmSettingsService:
     def __init__(self, appwrite_service: AppwriteService):
         self.appwrite = appwrite_service
-        self.collection_id = settings.APPWRITE_COLLECTION_SETTINGS_ID  # FIXED: matches .env file
+        self.collection_id = settings.APPWRITE_COLLECTION_SETTINGS_ID
         self.document_id = settings.APPWRITE_SETTINGS_DOCUMENT_ID
         self.default_settings = FarmSettingsData(
             farm_latitude=settings.DEFAULT_FARM_LATITUDE,
@@ -89,18 +91,16 @@ class FarmSettingsService:
     async def get_settings(self) -> FarmSettingsData:
         doc = await run_in_threadpool(self.appwrite.get_document, self.collection_id, self.document_id)
         if doc:
-            # Filter out Appwrite metadata before parsing with Pydantic
             appwrite_meta_keys = ['$id', '$collectionId', '$databaseId', '$createdAt', '$updatedAt', '$permissions']
             filtered_doc_data = {k: v for k, v in doc.items() if k not in appwrite_meta_keys}
             return FarmSettingsData(**filtered_doc_data)
 
         print(f"Settings document {self.document_id} not found, attempting to create with defaults.")
         try:
-            # Create with default settings if not found
             created_doc = await run_in_threadpool(
                 self.appwrite.create_document,
                 self.collection_id,
-                self.document_id, # Use specific ID for settings
+                self.document_id,
                 self.default_settings.model_dump()
             )
             if created_doc:
@@ -133,7 +133,7 @@ class WeatherService:
         self.appwrite = appwrite_service
         self.owm = owm_service
         self.settings_service = settings_service
-        self.weather_collection_id = settings.APPWRITE_COLLECTION_ID  # FIXED: was APPWRITE_WEATHER_COLLECTION_ID
+        self.weather_collection_id = settings.APPWRITE_COLLECTION_ID
         self.reco_collection_id = settings.APPWRITE_RECOMMENDATIONS_COLLECTION_ID
 
     def _transform_weather_data(self, raw_data: Dict[str, Any], lat: float, lon: float) -> Optional[WeatherData]:
@@ -158,8 +158,8 @@ class WeatherService:
                 wind_direction=str(wind.get('deg', '0')) if 'deg' in wind else None,
                 pressure=str(main.get('pressure', '0')),
                 visibility=str(raw_data.get('visibility', '0')),
-                location=location.model_dump_json(), # Serialize to JSON string
-                sun=sun_data.model_dump_json(),       # Serialize to JSON string
+                location=location.model_dump_json(),
+                sun=sun_data.model_dump_json(),
                 timestamp=datetime.utcnow()
             )
         except Exception as e:
@@ -181,7 +181,6 @@ class WeatherService:
         
         condition = self._get_condition_value(temp, humidity, wind_speed)
         
-        # Try Appwrite recommendations
         if settings.APPWRITE_RECOMMENDATIONS_COLLECTION_ID:
             try:
                 queries = [AppwriteQuery.equal("condition_value", condition), AppwriteQuery.limit(5)]
@@ -191,11 +190,10 @@ class WeatherService:
                     queries
                 )
                 if reco_docs_result and reco_docs_result['total'] > 0:
-                    return [doc['recommendation_text'] for doc in reco_docs_result['documents'] if 'recommendation_text' in doc] # Adjust field name
+                    return [doc['recommendation_text'] for doc in reco_docs_result['documents'] if 'recommendation_text' in doc]
             except Exception as e:
                 print(f"Could not fetch recommendations from Appwrite for condition '{condition}': {e}")
 
-        # Fallback to hardcoded recommendations
         hardcoded_recommendations = {
             "cold": ["Cold weather: Consider protecting sensitive plants."],
             "hot": ["Hot weather: Increase watering frequency."],
@@ -221,44 +219,52 @@ class WeatherService:
             print("Failed to transform weather data.")
             return None
 
-        # Save to Appwrite
-        # Pass AppwriteID.unique() for document_id to let Appwrite generate it.
+        data_for_appwrite = transformed_weather.model_dump(mode='json', exclude_none=True)
+
         saved_doc = await run_in_threadpool(
             self.appwrite.create_document,
             self.weather_collection_id,
-            AppwriteID.unique(), # Let Appwrite generate ID
-            transformed_weather.model_dump(exclude_none=True) # Exclude Nones
+            AppwriteID.unique(),
+            data_for_appwrite
         )
 
         if not saved_doc:
             print("Failed to save weather data to Appwrite.")
             return None
         
-        recommendations = await self._get_recommendations(raw_weather) # Use raw_weather for recommendations
-        
-        # Return data compatible with WeatherResponse model
-        # Map saved_doc back to WeatherData model before constructing the final response.
-        # This ensures that Appwrite-generated fields like $id are included if WeatherData model expects them.
+        recommendations = await self._get_recommendations(raw_weather)
         weather_data_for_response = WeatherData.model_validate(saved_doc)
 
         return {"weather": weather_data_for_response, "recommendations": recommendations}
 
 
     async def get_latest_weather(self) -> Optional[Dict[str, Any]]:
+        current_settings = await self.settings_service.get_settings()
         queries = [AppwriteQuery.order_desc("$createdAt"), AppwriteQuery.limit(1)]
         latest_docs_result = await run_in_threadpool(self.appwrite.list_documents, self.weather_collection_id, queries)
         
         if latest_docs_result and latest_docs_result['total'] > 0:
             latest_weather_doc = latest_docs_result['documents'][0]
+
+            # Verifica se a localização no registro mais recente corresponde às configurações atuais.
+            try:
+                location_from_db_str = latest_weather_doc.get('location', '{}')
+                location_from_db = json.loads(location_from_db_str)
+                db_lat = float(location_from_db.get('lat', 0.0))
+                db_lon = float(location_from_db.get('lon', 0.0))
+
+                # Se a localização não corresponder, retorna None para forçar o roteador a buscar dados novos.
+                if not math.isclose(db_lat, current_settings.farm_latitude) or \
+                   not math.isclose(db_lon, current_settings.farm_longitude):
+                    print("Location in DB is stale. Settings have been updated. Forcing refresh.")
+                    return None
+            except (json.JSONDecodeError, AttributeError, TypeError, ValueError) as e:
+                # Se não for possível analisar ou comparar, é mais seguro forçar a atualização.
+                print(f"Error comparing locations ({e}), forcing refresh.")
+                return None
             
-            # For recommendations, we need data OWM-like structure for temp, humidity, speed
-            # Try to reconstruct it or fetch fresh if fields are missing. For simplicity, use stored values.
-            # Note: The original flask app re-calculates recommendations based on stored temp, humidity, wind_speed
-            # This requires these fields to be stored as numbers, or convertible to numbers.
-            # The current _transform_weather_data stores them as strings.
-            # For robust recommendation, ensure numeric storage or parse carefully.
-            
-            raw_data_for_reco = { # Construct a simple dict for recommendation engine
+            # Se as localizações corresponderem, prossiga para construir a resposta com os dados em cache.
+            raw_data_for_reco = {
                 'main': {
                     'temp': float(latest_weather_doc.get('temperature', '0')),
                     'humidity': float(latest_weather_doc.get('humidity', '0'))
@@ -271,6 +277,7 @@ class WeatherService:
             
             weather_data_model = WeatherData.model_validate(latest_weather_doc)
             return {"weather": weather_data_model, "recommendations": recommendations}
+
         print("No latest weather found in Appwrite.")
         return None
 
@@ -282,8 +289,7 @@ class WeatherService:
         ]
         history_docs_result = await run_in_threadpool(self.appwrite.list_documents, self.weather_collection_id, queries)
         
-        # Documents are already dicts, can be validated by Pydantic list[WeatherData] if needed
-        return history_docs_result # This is {'total': X, 'documents': [...]}
+        return history_docs_result
 
 # Helper to run sync Appwrite calls in a thread pool
 from fastapi.concurrency import run_in_threadpool

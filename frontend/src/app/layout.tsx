@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Weather Dashboard',
   description: 'Real-time weather monitoring with recommendations',
+  icons: {
+    icon: '/favicon.png', // or '/favicon.png' if you prefer a PNG
+  },
 };
 
 export default function RootLayout({
